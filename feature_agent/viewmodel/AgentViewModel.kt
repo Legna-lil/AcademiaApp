@@ -14,8 +14,14 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.json.JSONObject
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.UUID
 import javax.inject.Inject
 
 @HiltViewModel
@@ -23,78 +29,133 @@ class AgentViewModel @Inject constructor(
     private val deepSeekService: DeepSeekService
 ) : ViewModel() {
 
-    // 使用 StateFlow 替代 LiveData 以便更好地处理流式数据
-    private val _chatState = MutableStateFlow<ChatState>(ChatState.Idle)
-    val chatState: StateFlow<ChatState> get() = _chatState.asStateFlow()
+    // 使用列表存储所有聊天消息
+    private val _chatMessages = MutableStateFlow<List<ChatMessage>>(emptyList())
+    val chatMessages: StateFlow<List<ChatMessage>> = _chatMessages.asStateFlow()
 
     private val _query = MutableStateFlow<String>("提出一个问题吧！")
-    val query: StateFlow<String> get() = _query.asStateFlow()
+    val query: StateFlow<String> = _query.asStateFlow()
+
+    // 当前是否正在加载
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
     val showChatDialog = mutableStateOf(false)
-    // 当前累积的回复内容
-    private var accumulatedResponse = StringBuilder()
 
-    // 密封类表示不同状态
-    sealed class ChatState {
-        object Idle : ChatState()
-        object Loading : ChatState()
-        data class Content(val text: String) : ChatState()
-        data class Success(val fullText: String) : ChatState()
-        data class Error(val message: String) : ChatState()
-    }
+    // 消息数据类
+    data class ChatMessage(
+        val id: String = UUID.randomUUID().toString(), // 唯一ID用于标识消息
+        val text: String,
+        val isUser: Boolean,
+        val timestamp: String = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date()),
+        val isComplete: Boolean = true, // 流式消息是否完成
+        val isError: Boolean = false
+    )
 
     fun sendMessage(userInput: String) {
         viewModelScope.launch {
             try {
-                // 1. 创建请求（使用 RequestMessage）
+                // 添加用户消息
+                addMessage(userInput, true)
+                // 添加初始AI消息（占位）
+                val aiMessage = addMessage("思考中...", false, false)
+                _isLoading.value = true
+                // 创建请求
                 val request = ChatRequest(
-                    messages = listOf(
-                        RequestMessage(role = "user", content = userInput)
-                    )
+                    messages = listOf(RequestMessage(role = "user", content = userInput))
                 )
-                // 2. 发送流式请求
+                // 发送流式请求
                 val response = withContext(Dispatchers.IO) {
                     deepSeekService.sendRequest(request)
                 }
                 if (!response.isSuccessful) {
-                    _chatState.value = ChatState.Error("API错误: ${response.code()}")
+                    updateMessage(aiMessage.id, "API错误: ${response.code()}", true)
                     return@launch
                 }
-                // 3. 处理流式响应
-                response.body()?.source()?.use { source ->
+                // 处理流式响应
+                val source = response.body()?.source()
+                source?.use { source ->
+                    val buffer = StringBuilder()
                     while (!source.exhausted()) {
                         val line = source.readUtf8Line() ?: continue
-
-                        if (line.startsWith("data:") && line != "data: [DONE]") {
-                            val json = line.substringAfter("data:").trim()
-                            processChunk(json)
-                        }  else if (line == "data: [DONE]") {
-                            break
+                        when {
+                            line.startsWith("data:") && line != "data: [DONE]" -> {
+                                val json = line.substringAfter("data:").trim()
+                                val content = parseChunkContent(json)
+                                if (content != null) {
+                                    buffer.append(content)
+                                    updateMessage(aiMessage.id, buffer.toString(), false)
+                                }
+                            }
+                            line == "data: [DONE]" -> {
+                                markMessageComplete(aiMessage.id)
+                                break
+                            }
                         }
                     }
                 }
-                // 4. 完成处理
-                _chatState.value = ChatState.Success(accumulatedResponse.toString())
-
             } catch (e: Exception) {
-                _chatState.value = ChatState.Error("异常: ${e.localizedMessage}")
+                updateMessage(_chatMessages.value.last().id, "异常: ${e.localizedMessage}", true)
+            } finally {
+                _isLoading.value = false
             }
         }
     }
 
-    private fun processChunk(json: String) {
-        try {
-            // 使用 Gson 解析（您可以根据需要替换为其他库）
-            val chunk = Gson().fromJson(json, ChatChunkResponse::class.java)
-            val content = chunk.choices.firstOrNull()?.delta?.content
-            if (!content.isNullOrBlank()) {
-                // 累积内容并更新状态
-                accumulatedResponse.append(content)
-                _chatState.value = ChatState.Content(accumulatedResponse.toString())
+    private fun addMessage(text: String, isUser: Boolean, isComplete: Boolean = true): ChatMessage {
+        val newMessage = ChatMessage(
+            text = text,
+            isUser = isUser,
+            isComplete = isComplete
+        )
+        _chatMessages.update { currentList ->
+            currentList + newMessage
+        }
+        return newMessage
+    }
+
+    private fun updateMessage(id: String, newText: String, isError: Boolean) {
+        _chatMessages.update { messages ->
+            messages.map { message ->
+                if (message.id == id) {
+                    message.copy(text = newText, isError = isError)
+                } else {
+                    message
+                }
             }
+        }
+    }
+
+    private fun markMessageComplete(id: String) {
+        _chatMessages.update { messages ->
+            messages.map { message ->
+                if (message.id == id) {
+                    message.copy(isComplete = true)
+                } else {
+                    message
+                }
+            }
+        }
+    }
+
+    private fun parseChunkContent(json: String): String? {
+        return try {
+            val jsonObject = JSONObject(json)
+            jsonObject.optJSONArray("choices")
+                ?.optJSONObject(0)
+                ?.optJSONObject("delta")
+                ?.optString("content", "")
+                ?.takeIf { it.isNotBlank() }
         } catch (e: Exception) {
             Log.e("Agent", "解析错误: $json", e)
+            null
         }
+    }
+
+    // 清空聊天记录
+    fun clearMessages() {
+        _chatMessages.value = emptyList()
+        _query.value = "提出一个问题吧！"
     }
 
     fun toggleShowDialog() {
@@ -103,6 +164,5 @@ class AgentViewModel @Inject constructor(
 
     fun setQuery(query: String) {
         _query.value = query
-        Log.i("Agent", _query.value)
     }
 }

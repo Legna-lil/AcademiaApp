@@ -13,17 +13,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.ShapeDefaults
-import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldColors
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
@@ -47,6 +41,7 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -55,13 +50,15 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.example.academiaui.core.util.showToast
 import com.example.academiaui.feature_manager.data.viewmodel.ManagerViewModel
 import com.example.academiaui.feature_manager.util.SubjectMapper
 
@@ -81,6 +78,7 @@ fun SettingPage(
 
     val context = LocalContext.current
     val keyboardController = LocalSoftwareKeyboardController.current
+
     val pickImageLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
@@ -100,8 +98,7 @@ fun SettingPage(
         if (isGranted) {
             pickImageLauncher.launch("image/*")
         } else {
-            // Handle permission denied (e.g., show a Snackbar)
-            // In a real app, you might want to show a rationale
+            showToast(context, "申请照片权限失败")
         }
     }
 
@@ -158,7 +155,7 @@ fun SettingPage(
             horizontalArrangement = Arrangement.Center
         ) {
             Text(
-                "用户名", style = MaterialTheme.typography.titleSmall,
+                "用户名", style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.padding(5.dp)
             )
             Spacer(modifier = Modifier.weight(1f))
@@ -168,8 +165,9 @@ fun SettingPage(
                 enabled = isManageMode,
                 singleLine = true,
                 textStyle = TextStyle(
-                    fontSize = 10.sp,
-                    color = MaterialTheme.colorScheme.onBackground
+                    fontSize = 20.sp,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    textAlign = TextAlign.Right
                 ),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
                 keyboardActions = KeyboardActions(onDone = {
@@ -177,6 +175,7 @@ fun SettingPage(
                 })
             )
         }
+        Spacer(modifier = Modifier.height(12.dp))
         Row(
             modifier = Modifier.fillMaxWidth()
                 .padding(horizontal = 20.dp)
@@ -185,7 +184,7 @@ fun SettingPage(
             horizontalArrangement = Arrangement.Center
         ) {
             Text(
-                "兴趣领域", style = MaterialTheme.typography.titleSmall,
+                "兴趣领域", style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.padding(5.dp)
             )
             Spacer(modifier = Modifier.weight(1f))
@@ -193,50 +192,60 @@ fun SettingPage(
                 if(selectedFields.isEmpty()) {
                     "暂无"
                 } else {
-                    selectedFields.map {
+                    selectedFields.joinToString("；") {
                         SubjectMapper.toChineseName(it)
-                    }.joinToString(",")
+                    }
                 },
-                modifier = Modifier.padding(5.dp)
+                modifier = Modifier.padding(5.dp),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                style = TextStyle(
+                    fontSize = 20.sp,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    textAlign = TextAlign.Right
+                )
             )
         }
         if(isManageMode) {
-            availableFields.forEach { (broaderCategoryName, interestsList) ->
-                Text(
-                    text = broaderCategoryName, // 直接使用 broaderCategoryName 作为标题
-                    style = MaterialTheme.typography.titleSmall,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 4.dp)
-                )
+            FlowRow (modifier = Modifier.padding(20.dp)
+                .wrapContentHeight()) {
+                availableFields.forEach { (broaderCategoryName, interestsList) ->
+                    Text(
+                        text = broaderCategoryName, // 直接使用 broaderCategoryName 作为标题
+                        style = MaterialTheme.typography.titleSmall,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp)
+                    )
 
-                FlowRow(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    // interestsList 是 List<Pair<String, String>>，其中 first 是英文，second 是中文
-                    interestsList.forEach { (englishField, chineseName) ->
+                    FlowRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        // interestsList 是 List<Pair<String, String>>，其中 first 是英文，second 是中文
+                        interestsList.forEach { (englishField, chineseName) ->
 //                        Log.i("Subject", englishField + " is " +selectedFields.contains(englishField))
-                        FilterChip(
-                            selected = selectedFields.contains(englishField), // 使用英文名判断选中状态
-                            onClick = { userDataStoreViewModel.toggleField(englishField) }, // 传递英文名
-                            label = { Text(chineseName) }, // 显示中文名
-                            leadingIcon = if (selectedFields.contains(englishField)) {
-                                {
-                                    Icon(
-                                        imageVector = Icons.Default.Check,
-                                        contentDescription = "Selected",
-                                        modifier = Modifier.size(FilterChipDefaults.IconSize)
-                                    )
+                            FilterChip(
+                                selected = selectedFields.contains(englishField), // 使用英文名判断选中状态
+                                onClick = { userDataStoreViewModel.toggleField(englishField) }, // 传递英文名
+                                label = { Text(chineseName) }, // 显示中文名
+                                leadingIcon = if (selectedFields.contains(englishField)) {
+                                    {
+                                        Icon(
+                                            imageVector = Icons.Default.Check,
+                                            contentDescription = "Selected",
+                                            modifier = Modifier.size(FilterChipDefaults.IconSize)
+                                        )
+                                    }
+                                } else {
+                                    null
                                 }
-                            } else {
-                                null
-                            }
-                        )
+                            )
+                        }
                     }
+                    Spacer(modifier = Modifier.height(8.dp))
                 }
-                Spacer(modifier = Modifier.height(8.dp))
             }
         }
     }

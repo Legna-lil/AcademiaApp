@@ -32,6 +32,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.draw.shadow
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.academiaui.core.data.viewmodel.AppStateViewModel
@@ -48,13 +49,15 @@ fun UserProfile(
     userDataStoreViewModel: UserDataStoreViewModel = viewModel(),
 ) {
     val avatarUri by userDataStoreViewModel.avatarUri.collectAsState()
+    val username by userDataStoreViewModel.username.collectAsState()
     val context = LocalContext.current
 
-    Column(modifier = Modifier.fillMaxWidth()
+    Column(modifier = Modifier.fillMaxSize()
         .padding(10.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center) {
 
+        Spacer(modifier = Modifier.weight(1f))
         Box(
             modifier = Modifier
                 .size(120.dp)
@@ -79,14 +82,15 @@ fun UserProfile(
                 )
             }
         }
-
+        Text("Welcome, $username", style = MaterialTheme.typography.titleLarge)
+        Spacer(modifier = Modifier.weight(1f))
         // 跳转页面
         Button(onClick = {Log.i("Profile", "设置")
             appStateViewModel.manageSetting()
             managerViewModel.setManageState(ManageState.SETTING)},
             modifier = Modifier.background(Color.Transparent)
                 .fillMaxWidth()
-                .border(2.dp, Color.LightGray)
+                .shadow(2.dp)
                 .weight(1f),
             shape = RectangleShape,
             colors = ButtonDefaults.buttonColors(
@@ -102,7 +106,7 @@ fun UserProfile(
             managerViewModel.setManageState(ManageState.STAR)},
             modifier = Modifier.background(Color.Transparent)
                 .fillMaxWidth()
-                .border(2.dp, Color.LightGray)
+                .shadow(2.dp)
                 .weight(1f),
             shape = RectangleShape,
             colors = ButtonDefaults.buttonColors(
@@ -118,7 +122,7 @@ fun UserProfile(
             managerViewModel.setManageState(ManageState.RECORD) },
             modifier = Modifier.background(Color.Transparent)
                 .fillMaxWidth()
-                .border(2.dp, Color.LightGray)
+                .shadow(2.dp)
                 .weight(1f),
             shape = RectangleShape,
             colors = ButtonDefaults.buttonColors(
@@ -134,7 +138,7 @@ fun UserProfile(
             managerViewModel.setManageState(ManageState.DOWNLOAD) },
             modifier = Modifier.background(Color.Transparent)
                 .fillMaxWidth()
-                .border(2.dp, Color.LightGray)
+                .shadow(2.dp)
                 .weight(1f),
             shape = RectangleShape,
             colors = ButtonDefaults.buttonColors(
@@ -144,7 +148,7 @@ fun UserProfile(
         ) {
             Text("本地下载", style = MaterialTheme.typography.titleLarge)
         }
-        Spacer(modifier = Modifier.weight(3f))
+        Spacer(modifier = Modifier.weight(2f))
     }
 }
 

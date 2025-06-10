@@ -68,7 +68,7 @@ fun ChatBox(
                     onInputChange = { userInput = it },
                     onSend = {
                         agentViewModel.sendMessage(userInput)
-                        agentViewModel.setQuery(userInput)
+//                        agentViewModel.setQuery(userInput)
                         userInput = ""
                     }
                 )
