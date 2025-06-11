@@ -23,8 +23,8 @@ import com.example.academiaui.feature_agent.viewmodel.AgentViewModel
 import com.example.academiaui.feature_manager.data.viewmodel.ManagerViewModel
 import com.example.academiaui.feature_search.presentation.PdfViewer
 import com.example.academiaui.feature_search.presentation.SearchPage
-import com.example.academiaui.feature_manager.ui.components.Manager
-import com.example.academiaui.feature_manager.ui.components.PaperProfile
+import com.example.academiaui.feature_manager.presentation.components.Manager
+import com.example.academiaui.feature_manager.presentation.components.PaperProfile
 import com.example.academiaui.feature_search.presentation.PaperScreen
 import dev.arxiv.name.data.Entry
 

@@ -2,7 +2,6 @@ package com.example.academiaui.feature_db.converter
 
 import androidx.room.TypeConverter
 import java.io.File
-import java.nio.file.Path
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Date

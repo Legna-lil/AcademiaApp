@@ -2,11 +2,10 @@ package com.example.academiaui.feature_search.data
 
 import android.util.Log
 import androidx.compose.runtime.State
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.academiaui.feature_manager.data.UserDataStore
+import com.example.academiaui.feature_manager.data.model.UserDataStore
 import com.example.academiaui.feature_search.repository.PaperRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.arxiv.name.data.Entry

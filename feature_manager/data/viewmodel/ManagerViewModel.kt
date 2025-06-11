@@ -13,7 +13,7 @@ import com.example.academiaui.feature_db.entities.Star
 import com.example.academiaui.feature_db.repositories.DownloadRepository
 import com.example.academiaui.feature_db.repositories.RecordRepository
 import com.example.academiaui.feature_db.repositories.StarRepository
-import com.example.academiaui.feature_manager.data.ManageState
+import com.example.academiaui.feature_manager.data.model.ManageState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.arxiv.name.data.Entry
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -37,10 +37,7 @@ import java.util.Date
 import java.time.LocalTime
 import javax.inject.Inject
 import kotlin.collections.joinToString
-
-import android.net.ConnectivityManager
-import android.net.NetworkCapabilities
-import android.os.Build
+import com.example.academiaui.core.util.NetworkConnectivity
 import com.example.academiaui.core.util.showToast
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -64,10 +61,8 @@ class ManagerViewModel @Inject constructor(
 
     private val _manageState = mutableStateOf(ManageState.RECORD)
     val manageState: State<ManageState> get() = _manageState
-
     // 下载状态
     private val _downloadStatus = MutableStateFlow<DownloadStatus>(DownloadStatus.Idle)
-    val downloadStatus: StateFlow<DownloadStatus> get() = _downloadStatus
 
     private val _operationsInProgress = MutableStateFlow<Set<String>>(emptySet())
     val operationsInProgress: StateFlow<Set<String>> = _operationsInProgress.asStateFlow()
@@ -219,7 +214,7 @@ class ManagerViewModel @Inject constructor(
             "update" to updatedTimeMillis
         )
         Log.i("DOWNLOAD", "getData")
-        Log.i("Network", NetworkUtils.isNetworkAvailable(context).toString())
+        Log.i("Network", NetworkConnectivity.isNetworkAvailable(context).toString())
         val request = OneTimeWorkRequestBuilder<PdfDownloadWorker>()
             .setInputData(inputData)
             .setConstraints(

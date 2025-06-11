@@ -36,7 +36,7 @@ import androidx.compose.ui.draw.shadow
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.academiaui.core.data.viewmodel.AppStateViewModel
-import com.example.academiaui.feature_manager.data.ManageState
+import com.example.academiaui.feature_manager.data.model.ManageState
 import com.example.academiaui.feature_manager.data.viewmodel.ManagerViewModel
 import com.example.academiaui.feature_manager.data.viewmodel.UserDataStoreViewModel
 

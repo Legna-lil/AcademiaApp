@@ -2,11 +2,10 @@ package com.example.academiaui.feature_manager.data.viewmodel
 
 import android.net.Uri
 import android.util.Log
-import androidx.compose.runtime.collectAsState
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.academiaui.feature_manager.util.SubjectMapper
-import com.example.academiaui.feature_manager.data.UserDataStore
+import com.example.academiaui.feature_manager.data.model.UserDataStore
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch

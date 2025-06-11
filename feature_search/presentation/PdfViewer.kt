@@ -1,9 +1,11 @@
 package com.example.academiaui.feature_search.presentation
 
 import android.util.Log
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
@@ -29,6 +31,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
@@ -58,6 +61,7 @@ fun PdfViewer(
     val downloads by managerViewModel.downloads.collectAsState()
     var isStarred by remember { mutableStateOf(false) }
     var inManager by remember { mutableStateOf(false) }
+    var pdfLoadError: String? by remember { mutableStateOf(null) }
 
     var showUnloadDialog by remember { mutableStateOf(false) }
     var showUnstarDialog by remember { mutableStateOf(false) }
@@ -66,6 +70,25 @@ fun PdfViewer(
     val selectedPaperType: String by appStateViewModel.selectedPaperType
     // 传入的可能是处理过的Url或Uri
     val selectedPaperUrl: String by appStateViewModel.selectedPaperPath
+
+    val pdfStatusCallBack = remember {
+        object : PdfRendererView.StatusCallBack {
+            override fun onPdfRenderSuccess() {
+                Log.i("PDF_STATUS", "PDF 渲染成功")
+                pdfLoadError = null
+            }
+
+            override fun onError(error: Throwable) {
+                Log.e("PDF_ERROR", "PdfRendererViewCompose 内部错误: ${error.message}", error)
+                // 当 PdfRendererViewCompose 内部发生错误时，更新错误状态
+                pdfLoadError = error.message ?: "PDF 渲染或加载时发生未知错误"
+            }
+
+            override fun onPdfRenderStart() {
+                Log.i("PDF_STATUS", "PDF 开始渲染")
+            }
+        }
+    }
 
     val operationsInProgress by managerViewModel.operationsInProgress.collectAsState()
 
@@ -163,7 +186,12 @@ fun PdfViewer(
         }
 
     }
-    Box() {
+
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
         if (showChatDialog) {
             ChatBox(
                 agentViewModel = agentViewModel,
@@ -171,22 +199,27 @@ fun PdfViewer(
             )
         }
         Log.i("Reader", "Read $selectedPaper: $selectedPaperType")
-        PdfRendererViewCompose(
-            source =
-                when (selectedPaperType) {
-                    "url" -> PdfSource.Remote(selectedPaperUrl)
-                    "uri" -> PdfSource.LocalUri(selectedPaperUrl.toUri())
-                    else -> PdfSource.LocalUri(selectedPaperUrl.toUri())
-                },
-            lifecycleOwner = LocalLifecycleOwner.current,
-            headers = HeaderData(mapOf("Authorization" to "123456789")),
+        if (pdfLoadError == null) {
+            PdfRendererViewCompose(
+                source =
+                    when (selectedPaperType) {
+                        "url" -> PdfSource.Remote(selectedPaperUrl)
+                        "uri" -> PdfSource.LocalUri(selectedPaperUrl.toUri())
+                        else -> PdfSource.LocalUri(selectedPaperUrl.toUri())
+                    },
+                lifecycleOwner = LocalLifecycleOwner.current,
+                headers = HeaderData(mapOf("Authorization" to "123456789")),
 
-            zoomListener = object : PdfRendererView.ZoomListener {
-                override fun onZoomChanged(isZoomedIn: Boolean, scale: Float) {
-                    Log.i("PDF Zoom", "Zoomed in: $isZoomedIn, Scale: $scale")
-                }
-            }
-        )
+                zoomListener = object : PdfRendererView.ZoomListener {
+                    override fun onZoomChanged(isZoomedIn: Boolean, scale: Float) {
+                        Log.i("PDF Zoom", "Zoomed in: $isZoomedIn, Scale: $scale")
+                    }
+                },
+                statusCallBack = pdfStatusCallBack
+            )
+        } else {
+            Text("显示 PDF 时发生错误")
+        }
     }
 
     if (showUnloadDialog) {
