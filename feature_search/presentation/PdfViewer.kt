@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
@@ -14,6 +15,7 @@ import androidx.compose.material.icons.outlined.SmartToy
 import androidx.compose.material.icons.outlined.StarOutline
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -21,17 +23,19 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.academiaui.core.data.viewmodel.AppStateViewModel
+import com.example.academiaui.core.util.convertArxivUrl
 import com.example.academiaui.feature_agent.presentation.ChatBox
 import com.example.academiaui.feature_agent.viewmodel.AgentViewModel
 import com.example.academiaui.feature_manager.data.viewmodel.ManagerViewModel
@@ -51,7 +55,7 @@ fun PdfViewer(
 ) {
     var coroutineScope = rememberCoroutineScope()
     var showChatDialog by agentViewModel.showChatDialog
-    var isDownloaded by remember { mutableStateOf(false) }
+    val downloads by managerViewModel.downloads.collectAsState()
     var isStarred by remember { mutableStateOf(false) }
     var inManager by remember { mutableStateOf(false) }
 
@@ -60,14 +64,23 @@ fun PdfViewer(
 
     val selectedPaper: Entry? by appStateViewModel.selectedPaper
     val selectedPaperType: String by appStateViewModel.selectedPaperType
+    // 传入的可能是处理过的Url或Uri
     val selectedPaperUrl: String by appStateViewModel.selectedPaperPath
 
-    val context = LocalContext.current
+    val operationsInProgress by managerViewModel.operationsInProgress.collectAsState()
+
+    val paperUrl = remember(selectedPaper) {
+        if (selectedPaper != null) convertArxivUrl(selectedPaper!!.id) else ""  // 若selectedPaper == null，应该触发inManager = true
+    }
+    val isProcessing = operationsInProgress.contains(paperUrl)
+
+    val isDownloaded = remember(downloads) {
+        downloads.any { it.url == paperUrl }
+    }
 
     val onUnloadConfirmDownload: () -> Unit = {
         coroutineScope.launch {
             managerViewModel.unload(selectedPaper!!)
-            isDownloaded = false
             showUnloadDialog = false
         }
     }
@@ -83,7 +96,6 @@ fun PdfViewer(
     LaunchedEffect(selectedPaper) {
         Log.i("PDF Viewer", "Open: $selectedPaperUrl")
         if(selectedPaper != null) {
-            isDownloaded = managerViewModel.isDownloaded(selectedPaper!!)
             isStarred = managerViewModel.isStarred(selectedPaper!!)
         } else {
             inManager = true
@@ -106,17 +118,30 @@ fun PdfViewer(
                 Icon(imageVector = Icons.Outlined.SmartToy, contentDescription = "Agent")
             }
             if (!inManager) {
-                IconButton(onClick = {
-                    if (isDownloaded) {
-                        showUnloadDialog = true
+                IconButton(
+                    onClick = {
+                        if (!isProcessing) {
+                            if (isDownloaded) {
+                                showUnloadDialog = true
+                            } else {
+                                managerViewModel.download(selectedPaper!!)
+                            }
+                        }
+                    },
+                    enabled = !isProcessing
+                ) {
+                    if (isProcessing) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(18.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.primary
+                        )
                     } else {
-                        managerViewModel.download(selectedPaper!!)
-                    }
-                }) {
-                    if (isDownloaded) {
-                        Icon(imageVector = Icons.Default.Check, contentDescription = "Downloaded")
-                    } else {
-                        Icon(imageVector = Icons.Filled.Download, contentDescription = "Download")
+                        if (isDownloaded) {
+                            Icon(imageVector = Icons.Default.Check, contentDescription = "Downloaded")
+                        } else {
+                            Icon(imageVector = Icons.Filled.Download, contentDescription = "Download")
+                        }
                     }
                 }
                 IconButton(onClick = {

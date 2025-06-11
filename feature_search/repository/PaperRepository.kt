@@ -35,7 +35,6 @@ class PaperRepository @Inject constructor() {
             Log.w("Search Engine", "Category list is empty.")
             // 暂时先指定cs.AI
         }
-
         // 1. 获取第一个元素用于 create()
         val firstCategory = when {
             categories.isEmpty() -> "cs.AI"
@@ -43,7 +42,6 @@ class PaperRepository @Inject constructor() {
         }
         var requestBuilder = SearchRequest.SearchRequestBuilder
             .create(firstCategory!!, SearchField.SUBJECT_CATEGORY)
-
         // 2. 遍历其余元素，使用 or() 级联调用
         if (categories.size > 1) {
             // 从第二个元素开始遍历
@@ -51,7 +49,6 @@ class PaperRepository @Inject constructor() {
                 requestBuilder = requestBuilder.or(category!!, SearchField.SUBJECT_CATEGORY)
             }
         }
-
         // 3. 继续构建其他通用的请求参数
         val request = requestBuilder
             .sortOrder(SortOrder.DESCENDING)

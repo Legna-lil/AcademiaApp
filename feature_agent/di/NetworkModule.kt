@@ -15,6 +15,7 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
+    val BASE_URL = "https://api.deepseek.com/"
 
     @Provides
     @Singleton
@@ -37,7 +38,7 @@ object NetworkModule {
     @Singleton
     fun provideRetrofit(okHttpClient: OkHttpClient): Retrofit {
         return Retrofit.Builder()
-            .baseUrl("https://api.deepseek.com/") // Deepseek API base URL
+            .baseUrl(BASE_URL)
             .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
@@ -45,7 +46,7 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideDeepseekApiService(retrofit: Retrofit): DeepSeekService {
+    fun provideDeepSeekApiService(retrofit: Retrofit): DeepSeekService {
         return retrofit.create(DeepSeekService::class.java)
     }
 }

@@ -43,6 +43,7 @@ import android.net.NetworkCapabilities
 import android.os.Build
 import com.example.academiaui.core.util.showToast
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 
 @HiltViewModel
 class ManagerViewModel @Inject constructor(
@@ -68,11 +69,8 @@ class ManagerViewModel @Inject constructor(
     private val _downloadStatus = MutableStateFlow<DownloadStatus>(DownloadStatus.Idle)
     val downloadStatus: StateFlow<DownloadStatus> get() = _downloadStatus
 
-    // 添加当前操作状态（包含paperId和操作类型）
-    private val _currentOperation = MutableStateFlow<Pair<String, OperationType>?>(null)
-    val currentOperation = _currentOperation.asStateFlow()
-
-    enum class OperationType { DOWNLOAD, UNLOAD }
+    private val _operationsInProgress = MutableStateFlow<Set<String>>(emptySet())
+    val operationsInProgress: StateFlow<Set<String>> = _operationsInProgress.asStateFlow()
 
     // 是否处于管理模式
     val isManageMode = mutableStateOf(false)
@@ -184,20 +182,28 @@ class ManagerViewModel @Inject constructor(
 
     // 下载操作
     fun download(paper: Entry) {
-        _currentOperation.value = paper.id to OperationType.DOWNLOAD
         val url = convertArxivUrl(paper.id)
+        if (_operationsInProgress.value.contains(url)) return
+
+        // 添加到进行中操作
+        _operationsInProgress.update { it + url }
+
         val title = modifyTitle(paper.title)
         val author = paper.author.joinToString { author -> author.name }
         val updatedTime = paper.updated
         // 检查是否已下载
         Log.i("DOWNLOAD", "Start to download")
         viewModelScope.launch {
-            if (downloadRepository.downloadExists(url)) {
-                _downloadStatus.value = DownloadStatus.Error("该论文已下载")
-                return@launch
+            try {
+                if (downloadRepository.downloadExists(url)) {
+                    _downloadStatus.value = DownloadStatus.Error("该论文已下载")
+                    return@launch
+                }
+                // 启动下载任务
+                startDownload(url, title, author, updatedTime)
+            } catch (e: Exception) {
+                _operationsInProgress.update { it - url }
             }
-            // 启动下载任务
-            startDownload(url, title, author, updatedTime)
         }
     }
 
@@ -244,14 +250,14 @@ class ManagerViewModel @Inject constructor(
                             _downloadStatus.value = DownloadStatus.Success(url)
                             Log.i("DOWNLOAD", "Successfully DOWNLOAD")
                         }
+                        _operationsInProgress.update { it - url }
                     }
                     showToast(context, "下载成功！")
-                    _currentOperation.value = null
                 }
                 WorkInfo.State.FAILED -> {
                     _downloadStatus.value = DownloadStatus.Error("下载失败")
                     showToast(context, "下载失败！")
-                    _currentOperation.value = null
+                    _operationsInProgress.update { it - url }
                 }
                 else -> {}
             }
@@ -261,18 +267,25 @@ class ManagerViewModel @Inject constructor(
     }
 
     fun unload(paper: Entry) {
-        _currentOperation.value = paper.id to OperationType.UNLOAD
+        val url = convertArxivUrl(paper.id)
+        if (_operationsInProgress.value.contains(url)) return
+        // 添加到进行中操作
+        _operationsInProgress.update { it + url }
         viewModelScope.launch {
-            val download = downloadRepository.getDownload(convertArxivUrl(paper.id)).firstOrNull()
-            if (download != null && download.uri?.isNotEmpty() == true) {
-                try {
+            try {
+                val download = downloadRepository.getDownload(convertArxivUrl(paper.id)).firstOrNull()
+                if (download != null && download.uri?.isNotEmpty() == true) {
                     val uri = Uri.parse(download.uri)
                     context.contentResolver.delete(uri, null, null)
                     downloadRepository.deleteDownload(download!!.url)
                     Log.i("DOWNLOAD", "Successfully delete download")
-                } catch (e: Exception) {
-                    Log.e("DOWNLOAD", "文件删除异常: ${e.message}")
+                    showToast(context, "删除下载文件成功！")
                 }
+                _operationsInProgress.update { it - url }
+            } catch (e: Exception) {
+                _operationsInProgress.update { it - url }
+                Log.e("DOWNLOAD", "文件删除异常: ${e.message}")
+                showToast(context, "删除下载文件失败！")
             }
         }
     }
@@ -363,26 +376,3 @@ class ManagerViewModel @Inject constructor(
     }
 }
 
-/* 网络连通判断器，只在调试时使用 */
-object NetworkUtils {
-    fun isNetworkAvailable(context: Context): Boolean {
-        val connectivityManager =
-            context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            val network = connectivityManager.activeNetwork ?: return false
-            val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
-
-            return capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
-                    capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) ||
-                    capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) ||
-                    capabilities.hasTransport(NetworkCapabilities.TRANSPORT_BLUETOOTH) // 某些情况下蓝牙也算网络
-        } else {
-            // 对于 Android M (API 23) 以下的版本
-            @Suppress("DEPRECATION")
-            val networkInfo = connectivityManager.activeNetworkInfo ?: return false
-            @Suppress("DEPRECATION")
-            return networkInfo.isConnected
-        }
-    }
-}

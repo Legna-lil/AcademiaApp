@@ -11,6 +11,7 @@ import com.example.academiaui.feature_agent.service.DeepSeekService
 import com.google.gson.Gson
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -85,6 +86,7 @@ class AgentViewModel @Inject constructor(
                                 if (content != null) {
                                     buffer.append(content)
                                     updateMessage(aiMessage.id, buffer.toString(), false)
+                                    delay(25)
                                 }
                             }
                             line == "data: [DONE]" -> {
@@ -140,12 +142,15 @@ class AgentViewModel @Inject constructor(
 
     private fun parseChunkContent(json: String): String? {
         return try {
+            Log.i("Agent", "Original JSON: $json")
             val jsonObject = JSONObject(json)
-            jsonObject.optJSONArray("choices")
+            val content = jsonObject.optJSONArray("choices")
                 ?.optJSONObject(0)
                 ?.optJSONObject("delta")
                 ?.optString("content", "")
                 ?.takeIf { it.isNotBlank() }
+            Log.d("Agent", "Parsed content: $content")
+            content
         } catch (e: Exception) {
             Log.e("Agent", "解析错误: $json", e)
             null

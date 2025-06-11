@@ -1,5 +1,6 @@
 package com.example.academiaui.feature_manager.ui.components
 
+import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -34,63 +35,40 @@ import com.example.academiaui.feature_manager.util.PdfDownloadWorker.DownloadSta
 import dev.arxiv.name.data.Entry
 import kotlinx.coroutines.launch
 
+// 组件 ButtonDownload.kt
 @Composable
 fun ButtonDownload(
     paper: Entry,
     managerViewModel: ManagerViewModel = viewModel()
 ) {
     val coroutineScope = rememberCoroutineScope()
-    var isDownloaded by remember { mutableStateOf(false) }
+    val downloads by managerViewModel.downloads.collectAsState()
+    val paperUrl = remember(paper.id) { convertArxivUrl(paper.id) }
+    val isDownloaded = remember(downloads) { downloads.any { it.url == paperUrl } }
     var showUnloadDialog by remember { mutableStateOf(false) }
-    val downloadStatus by managerViewModel.downloadStatus.collectAsState()
-    val currentOperation by managerViewModel.currentOperation.collectAsState()
+    val operationsInProgress by managerViewModel.operationsInProgress.collectAsState()
+    val isProcessing = operationsInProgress.contains(paperUrl)
 
-    // 检查当前论文是否正在被操作
-    val isProcessing = currentOperation?.let { (id, _) ->
-        id == convertArxivUrl(paper.id)
-    } ?: false
-
-    LaunchedEffect(paper) {
-        isDownloaded = managerViewModel.isDownloaded(paper)
-    }
-
-    LaunchedEffect(downloadStatus, paper.id) {
-        when (downloadStatus) {
-            is DownloadStatus.Success -> {
-                if ((downloadStatus as DownloadStatus.Success).paperId == paper.id) {
-                    isDownloaded = true
-                }
-            }
-            else -> {}
-        }
-    }
-
-    val onButtonClick: () -> Unit = onButtonClick@{
-        if (isProcessing) {
-            return@onButtonClick
-        }
-
-        if (isDownloaded) {
-            showUnloadDialog = true
-        } else {
-            coroutineScope.launch {
+    val onButtonClick: () -> Unit = {
+        if (!isProcessing) {
+            if (isDownloaded) {
+                showUnloadDialog = true
+            } else {
                 managerViewModel.download(paper)
             }
         }
     }
 
-    // 取消收藏确认处理
     val onUnloadConfirm: () -> Unit = {
         coroutineScope.launch {
             managerViewModel.unload(paper)
-            isDownloaded = false
             showUnloadDialog = false
         }
     }
 
-    // 按钮UI
     FilledTonalButton(
         onClick = onButtonClick,
+        enabled = !isProcessing,
         colors = ButtonDefaults.buttonColors(
             containerColor = if (isDownloaded) {
                 MaterialTheme.colorScheme.secondaryContainer
@@ -116,27 +94,26 @@ fun ButtonDownload(
                 )
                 Spacer(Modifier.width(8.dp))
                 Text("处理中...")
-            }
-            // 根据状态显示不同的图标
-            if (isDownloaded) {
-                Icon(
-                    Icons.Default.Check,
-                    contentDescription = "已下载",
-                    tint = MaterialTheme.colorScheme.primary
-                )
-                Text("已下载")
             } else {
-                Icon(
-                    Icons.Filled.Download,
-                    contentDescription = "下载",
-                    tint = MaterialTheme.colorScheme.secondary
-                )
-                Text("下载")
+                if (isDownloaded) {
+                    Icon(
+                        Icons.Default.Check,
+                        contentDescription = "已下载",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Text("已下载")
+                } else {
+                    Icon(
+                        Icons.Filled.Download,
+                        contentDescription = "下载",
+                        tint = MaterialTheme.colorScheme.secondary
+                    )
+                    Text("下载")
+                }
             }
         }
     }
 
-    // 取消收藏确认对话框
     if (showUnloadDialog) {
         AlertDialog(
             onDismissRequest = { showUnloadDialog = false },
@@ -145,16 +122,25 @@ fun ButtonDownload(
             confirmButton = {
                 TextButton(
                     onClick = onUnloadConfirm,
+                    enabled = !isProcessing,
                     colors = ButtonDefaults.textButtonColors(
                         contentColor = MaterialTheme.colorScheme.error
                     )
                 ) {
-                    Text("确定")
+                    if (isProcessing) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(18.dp),
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Text("确定")
+                    }
                 }
             },
             dismissButton = {
                 TextButton(
-                    onClick = { showUnloadDialog = false }
+                    onClick = { showUnloadDialog = false },
+                    enabled = !isProcessing
                 ) {
                     Text("取消")
                 }

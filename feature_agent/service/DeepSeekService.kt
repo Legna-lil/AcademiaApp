@@ -1,5 +1,6 @@
 package com.example.academiaui.feature_agent.service
 
+import com.example.academiaui.feature_agent.data.model.ChatChunkResponse
 import com.example.academiaui.feature_agent.data.model.ChatRequest
 import okhttp3.ResponseBody
 import retrofit2.Response

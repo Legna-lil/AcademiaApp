@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -56,15 +57,14 @@ fun PaperList(
                     state = listState
                 ) {
                     items(
-                        count = papers.size,
-                        key = { papers[it].id }
-                    ) { index ->
+                      papers
+                    ) { paper ->
                         PaperCard(
-                            paper = papers[index],
-                            onClick = { onClick(papers[index]) }
+                            paper = paper,
+                            onClick = { onClick(paper) }
                         )
                         // 4. 增量加载指示器
-                        if (index == papers.lastIndex && isLoading) {
+                        if (paper == papers.last() && isLoading) {
                             Log.i("Paper List", "Update New Page")
                             Box(
                                 modifier = Modifier
