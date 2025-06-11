@@ -43,7 +43,7 @@ fun PaperList(
             papers.isEmpty() -> {
                 // 加载完成但无数据
                 Text(
-                    "No papers found",
+                    "暂无数据",
                     modifier = Modifier.align(Alignment.Center)
                 )
             }
@@ -56,9 +56,7 @@ fun PaperList(
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                     state = listState
                 ) {
-                    items(
-                      papers
-                    ) { paper ->
+                    items(papers) { paper ->
                         PaperCard(
                             paper = paper,
                             onClick = { onClick(paper) }

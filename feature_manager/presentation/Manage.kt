@@ -65,22 +65,22 @@ fun Manage(
             Text(
                 text = item.author,
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.surface
+                color = MaterialTheme.colorScheme.surfaceTint
             )
             Spacer(modifier = Modifier.height(2.dp))
             when (item) {
                 is Record -> {
-                    Text(text = item.viewedTime.toString(),
+                    Text(text = "浏览时间：" + item.viewedTime.toString(),
                         style = MaterialTheme.typography.labelSmall)
                 }
                 is Download -> {
-                    Text(text = "Updated:" + item.updatedTime.toString(),
+                    Text(text = "更新时间：" + item.updatedTime.toString(),
                         style = MaterialTheme.typography.labelSmall)
-                    Text(text = "DOWNLOAD:" + item.downloadTime.toString(),
+                    Text(text = "下载时间：" + item.downloadTime.toString(),
                         style = MaterialTheme.typography.labelSmall)
                 }
                 is Star -> {
-                    Text(text = item.starredTime.toString(),
+                    Text(text = "收藏时间：" + item.starredTime.toString(),
                         style = MaterialTheme.typography.labelSmall)
                 }
             }

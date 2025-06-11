@@ -42,7 +42,6 @@ import com.example.academiaui.core.util.convertArxivUrl
 import com.example.academiaui.feature_agent.presentation.ChatBox
 import com.example.academiaui.feature_agent.viewmodel.AgentViewModel
 import com.example.academiaui.feature_manager.data.viewmodel.ManagerViewModel
-
 import com.rajat.pdfviewer.HeaderData
 import com.rajat.pdfviewer.compose.PdfRendererViewCompose
 import com.rajat.pdfviewer.PdfRendererView

@@ -82,7 +82,7 @@ fun UserProfile(
                 )
             }
         }
-        Text("Welcome, $username", style = MaterialTheme.typography.titleLarge)
+        Text("欢迎，$username", style = MaterialTheme.typography.titleLarge)
         Spacer(modifier = Modifier.weight(1f))
         // 跳转页面
         Button(onClick = {Log.i("Profile", "设置")

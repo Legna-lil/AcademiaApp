@@ -49,7 +49,7 @@ fun HomeTopBar(
         .background(Color.LightGray),
         title = {
             Row {
-                Text("Academia App")
+                Text("Academia")
                 Spacer(modifier = Modifier.weight(.1f))
                 Box(
                     modifier = Modifier

@@ -47,10 +47,12 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.ContentScale
@@ -126,7 +128,8 @@ fun SettingPage(
                             requestPermissionLauncher.launch(Manifest.permission.READ_EXTERNAL_STORAGE)
                         }
                     }
-                }
+                },
+            contentAlignment = Alignment.Center
         ) {
             if (avatarUri != null) {
                 AsyncImage (
@@ -144,6 +147,17 @@ fun SettingPage(
                     contentDescription = "Default Avatar",
                     modifier = Modifier.fillMaxSize(),
                     colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onSurface)
+                )
+            }
+
+            if (isManageMode) {
+                Icon(
+                    imageVector = Icons.Default.AddCircle, // 使用一个加号图标
+                    contentDescription = "Add Icon",
+                    modifier = Modifier
+                        .size(48.dp) // 调整加号的大小
+                        .alpha(0.5f), // 设置透明度
+                    tint = Color.White // 设置加号的颜色
                 )
             }
         }
@@ -199,10 +213,9 @@ fun SettingPage(
                     }
                 },
                 modifier = Modifier.padding(5.dp),
-                maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 style = TextStyle(
-                    fontSize = 20.sp,
+                    fontSize = 15.sp,
                     color = MaterialTheme.colorScheme.onBackground,
                     textAlign = TextAlign.Right
                 )

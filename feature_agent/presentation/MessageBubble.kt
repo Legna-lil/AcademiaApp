@@ -17,6 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
+import dev.jeziellago.compose.markdowntext.MarkdownText
 
 @Composable
 fun MessageBubble(
@@ -60,10 +61,9 @@ fun MessageBubble(
                         color = textColor
                     )
                 }
-                Text(
-                    text = text,
-                    color = textColor,
-                    style = MaterialTheme.typography.bodyLarge
+                MarkdownText(
+                    markdown = text,
+                    style = MaterialTheme.typography.bodyLarge.copy(textColor)
                 )
             }
         }

@@ -20,7 +20,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.academiaui.core.data.viewmodel.AppStateViewModel
 import com.example.academiaui.core.util.modifyTitle
 
-
 @Composable
 fun PaperCard(
     paper: Entry,
@@ -58,13 +57,19 @@ fun PaperCard(
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = "Published Date: " + paper.published.toString(),
+                text = "发布日期: " + paper.published.toString(),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.outline,
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = "最新更新日期: " + paper.updated.toString(),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.outline,
             )
             Spacer(modifier = Modifier.height(12.dp))
             Text(
-                text = "Summary: " + modifyTitle(paper.summary),
+                text = "概要: " + modifyTitle(paper.summary),
                 style = MaterialTheme.typography.bodyMedium,
                 maxLines = 3,
                 overflow = TextOverflow.Ellipsis
