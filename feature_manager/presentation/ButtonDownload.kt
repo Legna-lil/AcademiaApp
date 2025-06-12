@@ -1,4 +1,4 @@
-package com.example.academiaui.feature_manager.presentation.components
+package com.example.academiaui.feature_manager.presentation
 
 import android.util.Log
 import androidx.compose.foundation.layout.Arrangement

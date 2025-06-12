@@ -1,6 +1,5 @@
-package com.example.academiaui.feature_manager.presentation.components
+package com.example.academiaui.feature_manager.presentation
 
-import android.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -24,10 +23,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.modifier.modifierLocalConsumer
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.room.util.TableInfo
 import com.example.academiaui.core.data.viewmodel.AppStateViewModel
 import com.example.academiaui.core.util.modifyTitle
 import com.example.academiaui.feature_manager.data.viewmodel.ManagerViewModel
@@ -115,6 +113,6 @@ fun PaperProfile(
             )
             Spacer(modifier = Modifier.weight(.1f))
         }
+        Spacer(modifier = Modifier.height(100.dp))
     }
-
 }

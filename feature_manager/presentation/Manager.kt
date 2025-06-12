@@ -1,4 +1,4 @@
-package com.example.academiaui.feature_manager.presentation.components
+package com.example.academiaui.feature_manager.presentation
 
 import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
@@ -40,7 +40,6 @@ import com.example.academiaui.core.util.ConfirmationDialog
 import com.example.academiaui.feature_db.entities.ListItem
 import com.example.academiaui.feature_manager.data.model.ManageState
 import com.example.academiaui.feature_manager.data.viewmodel.ManagerViewModel
-import com.example.academiaui.feature_manager.presentation.SettingPage
 import kotlinx.coroutines.launch
 
 @Composable

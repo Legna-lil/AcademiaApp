@@ -1,4 +1,4 @@
-package com.example.academiaui.feature_manager.presentation.components
+package com.example.academiaui.feature_manager.presentation
 
 import android.util.Log
 import androidx.compose.foundation.clickable
@@ -31,7 +31,6 @@ fun Manage(
     isManageMode: Boolean,
     onClick: (ListItem) -> Unit,
 ) {
-
     Row(
         modifier = Modifier
             .fillMaxWidth()
