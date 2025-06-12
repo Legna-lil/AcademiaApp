@@ -43,9 +43,9 @@ fun AcademiaApp(
 
     var showChatDialog by agentViewModel.showChatDialog
 
-//    LaunchedEffect(Unit) {
-//        paperViewModel.defaultPapers()
-//    }
+    LaunchedEffect(Unit) {
+        paperViewModel.defaultPapers()
+    }
 
     Box(
         modifier = Modifier.fillMaxSize()

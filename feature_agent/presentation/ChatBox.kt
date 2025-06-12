@@ -54,6 +54,7 @@ fun ChatBox(
             Column(
                 modifier = Modifier
                     .padding(vertical = 30.dp, horizontal = 10.dp)
+                    .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(12.dp))
                     .fillMaxSize()
             ) {
                 WindowTitleBar(

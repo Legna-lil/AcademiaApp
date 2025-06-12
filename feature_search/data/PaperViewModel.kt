@@ -14,6 +14,7 @@ import dev.arxiv.name.data.Entry
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
@@ -58,24 +59,23 @@ class PaperViewModel @Inject constructor(
                 userDataStore.preferredField
                     .flatMapLatest { categories ->
                         flowOf(paperRepository.defaultPapers(categories))
-                    }
+                    }.first()
             }
             handleNetworkState(state)
             Log.i("Default Papers", result.toString())
-            result?.collect { papers ->
-                if(papers == null) {
-                    _homePapers.value = emptyList<Entry>()
-                } else {
-                    _homePapers.value = papers
-                }
-                _homeLoadingState.value = false
+            if (result == null) {
+                _homePapers.value = emptyList<Entry>()
+            } else {
+                _homePapers.value = result
             }
+            _homeLoadingState.value = false
         }
     }
 
     fun refreshHomePapers() {
         if (refreshingState.value) return
         _refreshingState.value = true
+        Log.i("Refresh", _refreshingState.value.toString())
         try {
             defaultPapers()
             _refreshingState.value = false

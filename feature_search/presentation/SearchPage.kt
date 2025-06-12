@@ -36,7 +36,9 @@ fun SearchPage(
             isLoading = isLoading,
             hasMore = paperViewModel.canLoadMore.value,
             onRefresh = {
-                paperViewModel.refreshSearchPapers(currentQuery)
+                if(currentQuery != "") {
+                    paperViewModel.refreshSearchPapers(currentQuery)
+                }
             },
             onLoadMore = {
                 paperViewModel.loadMorePapers(currentQuery)

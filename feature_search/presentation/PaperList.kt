@@ -17,6 +17,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -43,39 +44,42 @@ fun PaperList(
     modifier: Modifier = Modifier.fillMaxSize()
 ) {
     val context = LocalContext.current
-    var isUpdating by remember { mutableStateOf(false) }
+    val isUpdating by remember { derivedStateOf { papers.isNotEmpty() } }
 
     Log.d("Paper List", "PaperList recomposed")
     LaunchedEffect(isLoading, isRefreshing, isUpdating) {
         Log.i("Paper List", "isLoading $isLoading, isRefreshing $isRefreshing, isUpdating $isUpdating")
     }
+    val showFullScreenLoading = remember(isLoading, isRefreshing, isUpdating) {
+        (isLoading && !isUpdating) || isRefreshing
+    }
 
     Box(modifier = modifier) {
-
         if(networkErrorState != null){
             showToast(context, networkErrorState)
         }
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 8.dp),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally,
-            state = listState
-        ) {
-
-            when {
-                papers.isEmpty() && !((isLoading && !isUpdating) || isRefreshing) -> {
+        if(showFullScreenLoading) {
+            CircularProgressIndicator(
+                modifier = Modifier.align(Alignment.Center)
+            )
+        } else {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 8.dp),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally,
+                state = listState
+            ) {
+                if(papers.isEmpty()) {
                     item {
                         // 加载完成但无数据
                         Text(
                             "暂无数据",
                             modifier = Modifier.align(Alignment.Center)
                         )
-                        isUpdating = false
                     }
-                }
-                !papers.isEmpty() && !((isLoading && !isUpdating) || isRefreshing) -> {
+                } else {
                     // 有数据时显示列表
                     items(papers) { paper ->
                         PaperCard(
@@ -96,18 +100,12 @@ fun PaperList(
                                 // 没有更多数据
                                 !hasMore -> Text("已经到底了！", color = Color.Gray)
                                 // 其他情况显示占位符（最小高度）
-                                else -> Spacer(modifier = Modifier.height(1.dp))
+                                else -> {
+                                    Spacer(modifier = Modifier.height(3.dp))
+                                    Spacer(modifier = Modifier.height(10.dp))
+                                }
                             }
                         }
-                    }
-                    isUpdating = true
-                }
-                ((isLoading && !isUpdating) || isRefreshing) -> {
-                    item {
-                        CircularProgressIndicator(
-                            modifier = Modifier.align(Alignment.Center)
-                        )
-                        return@item
                     }
                 }
             }

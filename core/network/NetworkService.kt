@@ -27,8 +27,8 @@ class NetworkService @Inject constructor(
     sealed class NetworkState {
         object Available : NetworkState()
         object Unavailable : NetworkState()
-        object TimeoutWarning : NetworkState()  // 15秒超时
-        object TimeoutCancel : NetworkState()   // 30秒超时
+        object TimeoutWarning : NetworkState()  // 10秒超时
+        object TimeoutCancel : NetworkState()   // 20秒超时
         object Error : NetworkState()
         object Success : NetworkState()
     }
@@ -57,7 +57,7 @@ class NetworkService @Inject constructor(
                     delay(10000L)
                     if (isActive) {
                         warningChannel.send(Unit)
-                        Log.i("Network Service", "Warning: 5s")
+                        Log.i("Network Service", "Warning: 10s")
                     }
                 }
                 val deferredResult = async { block() }
@@ -70,7 +70,7 @@ class NetworkService @Inject constructor(
                     }
                 }
                 // 使用withTimeoutOrNull 来处理20秒超时，等待 deferredResult 完成
-                val timeoutResult = withTimeoutOrNull(20000L) { // 20秒最终超时
+                val timeoutResult = withTimeoutOrNull(30000L) { // 20秒最终超时
                     val result = deferredResult.await() // 等待实际的网络请求完成
                     // 如果请求在20秒内完成，取消警告任务和通知通道
                     warningJob.cancel()
@@ -84,7 +84,8 @@ class NetworkService @Inject constructor(
                 when (timeoutResult) {
                     null -> {
                         // 只有当 withTimeoutOrNull 自身超时，而 select 还没有返回时，timeoutResult 才是 null
-                        Log.i("Network Service", "TimeOut: 20s")
+                        deferredResult.cancel()
+                        Log.i("Network Service", "TimeOut: 30s")
                         Pair(null, NetworkState.TimeoutCancel)
                     }
                     else -> {
