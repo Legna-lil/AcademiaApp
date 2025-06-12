@@ -40,6 +40,7 @@ import com.example.academiaui.core.util.ConfirmationDialog
 import com.example.academiaui.feature_db.entities.ListItem
 import com.example.academiaui.feature_manager.data.model.ManageState
 import com.example.academiaui.feature_manager.data.viewmodel.ManagerViewModel
+import com.example.academiaui.feature_manager.presentation.SettingPage
 import kotlinx.coroutines.launch
 
 @Composable
@@ -90,6 +91,9 @@ fun Manager(
                 IconButton(onClick = {
                     appStateViewModel.navigateBack()
                     managerViewModel.removeSelection()
+                    if(isManageMode) {
+                        managerViewModel.toggleManageMode()
+                    }
                 }) {
                     Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                 }

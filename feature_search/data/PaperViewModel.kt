@@ -5,6 +5,8 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.academiaui.core.network.NetworkService
+import com.example.academiaui.core.network.NetworkService.NetworkState
 import com.example.academiaui.feature_manager.data.model.UserDataStore
 import com.example.academiaui.feature_search.repository.PaperRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -20,7 +22,8 @@ import javax.inject.Inject
 @HiltViewModel
 class PaperViewModel @Inject constructor(
     private val paperRepository: PaperRepository,
-    private val userDataStore: UserDataStore
+    private val userDataStore: UserDataStore,
+    private val networkService: NetworkService
 ): ViewModel() {
 
     private val _homePapers = MutableStateFlow<List<Entry>>(emptyList())
@@ -40,17 +43,26 @@ class PaperViewModel @Inject constructor(
 
     private var currentPage = 0
     private val pageSize = 10
-    private var canLoadMore = true
+    private val _canLoadMore = mutableStateOf(true)
+    val canLoadMore: State<Boolean> get() = _canLoadMore
+
+    // 网络错误状态：null或者错误string
+    private val _networkErrorState = MutableStateFlow<String?>(null)
+    val networkErrorState: StateFlow<String?> get() = _networkErrorState
 
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     fun defaultPapers() {
         viewModelScope.launch {
             _homeLoadingState.value = true
-            val papersFlow: Flow<List<Entry>?> = userDataStore.preferredField
+            val (result, state) = networkService.withNetworkTimeout {
+                userDataStore.preferredField
                     .flatMapLatest { categories ->
                         flowOf(paperRepository.defaultPapers(categories))
                     }
-            papersFlow.collect { papers ->
+            }
+            handleNetworkState(state)
+            Log.i("Default Papers", result.toString())
+            result?.collect { papers ->
                 if(papers == null) {
                     _homePapers.value = emptyList<Entry>()
                 } else {
@@ -66,21 +78,9 @@ class PaperViewModel @Inject constructor(
         _refreshingState.value = true
         try {
             defaultPapers()
-        } catch (e: Exception) {
-            Log.e("Paper View Model", "Refresh Exception")
-        } finally {
             _refreshingState.value = false
-        }
-    }
-
-    fun refreshSearchPapers(query: String) {
-        if (refreshingState.value) return
-        _refreshingState.value = true
-        try {
-            searchPapers(query)
         } catch (e: Exception) {
             Log.e("Paper View Model", "Refresh Exception")
-        } finally {
             _refreshingState.value = false
         }
     }
@@ -88,7 +88,11 @@ class PaperViewModel @Inject constructor(
     fun searchPapers(query: String) {
         viewModelScope.launch {
             _searchLoadingState.value = true
-            var papers = paperRepository.searchPapers(query)
+            _networkErrorState.value = null
+            val (papers, state) = networkService.withNetworkTimeout {
+                paperRepository.searchPapers(query)
+            }
+            handleNetworkState(state)
             if(papers == null) {
                 _searchPapers.value = emptyList<Entry>()
             } else {
@@ -98,24 +102,42 @@ class PaperViewModel @Inject constructor(
         }
     }
 
+    fun refreshSearchPapers(query: String) {
+        if (refreshingState.value) return
+        _refreshingState.value = true
+        try {
+            searchPapers(query)
+            _refreshingState.value = false
+        } catch (e: Exception) {
+            Log.e("Paper View Model", "Refresh Exception")
+            _refreshingState.value = false
+        }
+    }
     // 加载更多论文
     fun loadMorePapers(query: String) {
-        if (!canLoadMore) return
+        if (!_canLoadMore.value) return
+        _searchLoadingState.value = true
+        _networkErrorState.value = null
         viewModelScope.launch {
             try {
                 val startIndex = currentPage * pageSize
                 // 构建分页请求
-                val newPapers = paperRepository.searchPapersByPaging(query, startIndex, pageSize)
+                val (newPapers, state) = networkService.withNetworkTimeout {
+                    paperRepository.searchPapersByPaging(query, startIndex, pageSize)
+                }
+                handleNetworkState(state)
+
                 if(newPapers != null) {
                     if (newPapers.size < pageSize) {
-                        canLoadMore = false // 已加载所有数据
+                        _canLoadMore.value = false // 已加载所有数据
                     }
                     _searchPapers.value = _searchPapers.value + newPapers
                     currentPage++
                 }
-
+                Log.i("Search Engine", "Finish Paging Search")
+                _searchLoadingState.value = false
             } catch (e: Exception) {
-                Log.e("Search Engine", "Paging " + e.toString())
+                Log.e("Search Engine", "Paging $e")
             }
         }
     }
@@ -126,13 +148,23 @@ class PaperViewModel @Inject constructor(
         _refreshingState.value = true
         try {
             currentPage = 0
-            canLoadMore = true
+            _canLoadMore.value = true
             _searchPapers.value = emptyList()
             loadMorePapers(query)
+            _refreshingState.value = false
         } catch (e: Exception) {
             Log.e("Paper View Model", "Refresh Exception")
-        } finally {
-            _refreshingState.value = false
+        }
+    }
+
+    // 处理网络状态
+    private fun handleNetworkState(state: NetworkState) {
+        _networkErrorState.value = when (state) {
+            NetworkState.Unavailable -> "网络不可用，请检查连接"
+            NetworkState.TimeoutWarning -> "网络响应缓慢..."
+            NetworkState.TimeoutCancel -> "请求超时，请重试"
+            NetworkState.Error -> "出现异常，请重试"
+            else -> null
         }
     }
 }

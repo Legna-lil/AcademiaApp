@@ -13,7 +13,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.academiaui.core.data.AppState
 import com.example.academiaui.feature_search.data.PaperViewModel
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.example.academiaui.core.data.viewmodel.AppStateViewModel
@@ -36,16 +36,16 @@ fun AcademiaApp(
     agentViewModel: AgentViewModel = viewModel()
 ) {
     var currentAppState: AppState = appStateViewModel.currentAppState.value
-    var lastLoadTime by remember { mutableStateOf(0L) }
+    var lastLoadTime by remember { mutableLongStateOf(0L) }
 
     val homePapers: List<Entry> by paperViewModel.homePapers.collectAsState()
     val isLoading: Boolean by paperViewModel.homeLoadingState
 
     var showChatDialog by agentViewModel.showChatDialog
 
-    LaunchedEffect(Unit) {
-        paperViewModel.defaultPapers()
-    }
+//    LaunchedEffect(Unit) {
+//        paperViewModel.defaultPapers()
+//    }
 
     Box(
         modifier = Modifier.fillMaxSize()
@@ -84,6 +84,7 @@ fun AcademiaApp(
                                 paperViewModel = paperViewModel,
                                 papers = homePapers,
                                 isLoading = isLoading,
+                                hasMore = false,
                                 onRefresh = {
                                     if (System.currentTimeMillis() - lastLoadTime > 1000) {
                                         lastLoadTime = System.currentTimeMillis()

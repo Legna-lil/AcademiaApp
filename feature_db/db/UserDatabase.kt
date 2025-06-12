@@ -16,7 +16,7 @@ import com.example.academiaui.feature_db.entities.Star
 
 @Database(
     entities = [Record::class, Download::class, Star::class],
-    version = 3,
+    version = 4,
     exportSchema = false
 )
 @TypeConverters(ListConverter::class)

@@ -1,4 +1,4 @@
-package com.example.academiaui.feature_manager.presentation.components
+package com.example.academiaui.feature_manager.presentation
 
 import android.Manifest
 import android.content.Intent
@@ -52,8 +52,11 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -82,6 +85,10 @@ fun SettingPage(
 
     val context = LocalContext.current
     val keyboardController = LocalSoftwareKeyboardController.current
+
+    var localUsername by remember(username) {
+        mutableStateOf(username)
+    }
 
     val pickImageLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -176,19 +183,28 @@ fun SettingPage(
             )
             Spacer(modifier = Modifier.weight(1f))
             OutlinedTextField(
-                value = username,
-                onValueChange = { userDataStoreViewModel.updateUsername(it) },
+                value = localUsername,
+                onValueChange = { localUsername = it },
                 enabled = isManageMode,
                 singleLine = true,
                 textStyle = TextStyle(
-                    fontSize = 20.sp,
+                    fontSize = 18.sp,
                     color = MaterialTheme.colorScheme.onBackground,
-                    textAlign = TextAlign.Right
+                    textAlign = TextAlign.End
                 ),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
                 keyboardActions = KeyboardActions(onDone = {
                     keyboardController?.hide()
-                })
+                    userDataStoreViewModel.updateUsername(localUsername)
+                }),
+                modifier = Modifier.weight(3f) // 让 OutlinedTextField 填充剩余空间
+                    .padding(end = 16.dp)
+                    .onFocusChanged { focusState ->
+                        // 失去焦点时保存到持久化状态
+                        if (!focusState.isFocused) {
+                            userDataStoreViewModel.updateUsername(localUsername)
+                        }
+                    }
             )
         }
         Spacer(modifier = Modifier.height(12.dp))
@@ -215,9 +231,9 @@ fun SettingPage(
                 modifier = Modifier.padding(5.dp),
                 overflow = TextOverflow.Ellipsis,
                 style = TextStyle(
-                    fontSize = 15.sp,
+                    fontSize = 16.sp,
                     color = MaterialTheme.colorScheme.onBackground,
-                    textAlign = TextAlign.Right
+                    textAlign = TextAlign.End
                 )
             )
         }

@@ -22,7 +22,6 @@ fun SearchPage(
 ) {
     var currentQuery by remember { mutableStateOf("") }
     val searchPapers by paperViewModel.searchPapers.collectAsState()
-    var lastLoadTime by remember { mutableLongStateOf(0L) }
     val isLoading by paperViewModel.searchLoadingState
 
     Column(modifier = Modifier.fillMaxSize()
@@ -35,11 +34,9 @@ fun SearchPage(
             paperViewModel = paperViewModel,
             papers = searchPapers,
             isLoading = isLoading,
+            hasMore = paperViewModel.canLoadMore.value,
             onRefresh = {
-                if (System.currentTimeMillis() - lastLoadTime > 1000) {
-                    lastLoadTime = System.currentTimeMillis()
-                    paperViewModel.refreshSearchPapers(currentQuery)
-                }
+                paperViewModel.refreshSearchPapers(currentQuery)
             },
             onLoadMore = {
                 paperViewModel.loadMorePapers(currentQuery)

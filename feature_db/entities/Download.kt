@@ -2,7 +2,6 @@ package com.example.academiaui.feature_db.entities
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import java.time.LocalTime
 import java.util.Date
 
 @Entity(
@@ -14,5 +13,5 @@ data class Download(
     override val author: String,
     val uri: String,
     val updatedTime: Date,
-    val downloadTime: LocalTime
+    val downloadTime: Date
 ): ListItem

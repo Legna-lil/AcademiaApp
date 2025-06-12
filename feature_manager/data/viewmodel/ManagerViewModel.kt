@@ -37,7 +37,7 @@ import java.util.Date
 import java.time.LocalTime
 import javax.inject.Inject
 import kotlin.collections.joinToString
-import com.example.academiaui.core.util.NetworkConnectivity
+import com.example.academiaui.core.network.NetworkConnectivity
 import com.example.academiaui.core.util.showToast
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -143,7 +143,7 @@ class ManagerViewModel @Inject constructor(
                 convertArxivUrl(paper.id),
                 modifyTitle(paper.title),
                 paper.author.joinToString { author -> author.name },
-                LocalTime.now()
+                Date()
             )
             recordRepository.insertRecord(record)
             Log.i("RECORD", "Successfully inserted")
@@ -157,7 +157,7 @@ class ManagerViewModel @Inject constructor(
                 item.url,
                 item.title,
                 item.author,
-                LocalTime.now()
+                Date()
             )
             recordRepository.insertRecord(record)
             Log.i("RECORD", "Successfully inserted")
@@ -239,7 +239,7 @@ class ManagerViewModel @Inject constructor(
                                 author = author,
                                 uri = uri,
                                 updatedTime = Date(updatedTimeMillis),
-                                downloadTime = LocalTime.now()
+                                downloadTime = Date()
                             )
                             downloadRepository.insertDownload(download)
                             _downloadStatus.value = DownloadStatus.Success(url)
@@ -324,7 +324,7 @@ class ManagerViewModel @Inject constructor(
                 convertArxivUrl(paper.id),
                 modifyTitle(paper.title),
                 paper.author.joinToString { author -> author.name },
-                LocalTime.now()
+                Date()
             )
             try {
                 starRepository.insertStar(star)
