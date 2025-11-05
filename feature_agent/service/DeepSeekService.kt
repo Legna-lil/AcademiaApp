@@ -17,4 +17,5 @@ interface DeepSeekService {
         @Body request: ChatRequest
     ): Response<ResponseBody>
 }
-const val DEEPSEEK_API_KEY = "sk-5606f67f82cc47eea0fc5f0a881e6290"
+
+const val DEEPSEEK_API_KEY = "Avoid KEY API LEAK, please replace it with yours."
