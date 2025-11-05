@@ -45,6 +45,7 @@ class NetworkService @Inject constructor(
     ): Pair<T?, NetworkState> {
         Log.i("Network Service", "Available: " + checkNetwork())
         if (!checkNetwork()) {
+            showToast(context, "网络不可用，请检查连接")
             return Pair(null, NetworkState.Unavailable)
         }
         return try {
@@ -86,6 +87,7 @@ class NetworkService @Inject constructor(
                         // 只有当 withTimeoutOrNull 自身超时，而 select 还没有返回时，timeoutResult 才是 null
                         deferredResult.cancel()
                         Log.i("Network Service", "TimeOut: 30s")
+                        showToast(context, "请求超时，请重试")
                         Pair(null, NetworkState.TimeoutCancel)
                     }
                     else -> {
@@ -97,6 +99,7 @@ class NetworkService @Inject constructor(
             }
         } catch (e: Exception) {
             Log.e("Network Service", e.message.toString())
+            showToast(context, "出现异常，请重试")
             Pair(null, NetworkState.Error)
         }
     }

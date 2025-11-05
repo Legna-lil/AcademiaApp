@@ -23,8 +23,8 @@ import com.example.academiaui.feature_agent.viewmodel.AgentViewModel
 import com.example.academiaui.feature_manager.data.viewmodel.ManagerViewModel
 import com.example.academiaui.feature_search.presentation.PdfViewer
 import com.example.academiaui.feature_search.presentation.SearchPage
-import com.example.academiaui.feature_manager.presentation.components.Manager
-import com.example.academiaui.feature_manager.presentation.components.PaperProfile
+import com.example.academiaui.feature_manager.presentation.Manager
+import com.example.academiaui.feature_manager.presentation.PaperProfile
 import com.example.academiaui.feature_search.presentation.PaperScreen
 import dev.arxiv.name.data.Entry
 
@@ -40,6 +40,7 @@ fun AcademiaApp(
 
     val homePapers: List<Entry> by paperViewModel.homePapers.collectAsState()
     val isLoading: Boolean by paperViewModel.homeLoadingState
+    val homeRefreshing by paperViewModel.homeRefreshingState
 
     var showChatDialog by agentViewModel.showChatDialog
 
@@ -84,6 +85,7 @@ fun AcademiaApp(
                                 paperViewModel = paperViewModel,
                                 papers = homePapers,
                                 isLoading = isLoading,
+                                isRefreshing = homeRefreshing,
                                 hasMore = false,
                                 onRefresh = {
                                     if (System.currentTimeMillis() - lastLoadTime > 1000) {

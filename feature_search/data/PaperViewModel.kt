@@ -5,20 +5,24 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.paging.cachedIn
 import com.example.academiaui.core.network.NetworkService
-import com.example.academiaui.core.network.NetworkService.NetworkState
 import com.example.academiaui.feature_manager.data.model.UserDataStore
 import com.example.academiaui.feature_search.repository.PaperRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.arxiv.name.data.Entry
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import kotlin.toString
 
 @HiltViewModel
 class PaperViewModel @Inject constructor(
@@ -39,8 +43,11 @@ class PaperViewModel @Inject constructor(
     internal val _searchLoadingState = mutableStateOf(false)
     val searchLoadingState: State<Boolean> get() = _searchLoadingState
 
-    private val _refreshingState = mutableStateOf(false)
-    val refreshingState: State<Boolean> get() = _refreshingState
+    private val _homeRefreshingState = mutableStateOf(false)
+    val homeRefreshingState: State<Boolean> get() = _homeRefreshingState
+
+    private val _searchRefreshingState = mutableStateOf(false)
+    val searchRefreshingState: State<Boolean> get() = _searchRefreshingState
 
     private var currentPage = 0
     private val pageSize = 10
@@ -51,67 +58,71 @@ class PaperViewModel @Inject constructor(
     private val _networkErrorState = MutableStateFlow<String?>(null)
     val networkErrorState: StateFlow<String?> get() = _networkErrorState
 
-    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
-    fun defaultPapers() {
-        viewModelScope.launch {
-            _homeLoadingState.value = true
-            val (result, state) = networkService.withNetworkTimeout {
-                userDataStore.preferredField
-                    .flatMapLatest { categories ->
-                        flowOf(paperRepository.defaultPapers(categories))
-                    }.first()
-            }
-            handleNetworkState(state)
-            Log.i("Default Papers", result.toString())
-            if (result == null) {
-                _homePapers.value = emptyList<Entry>()
-            } else {
-                _homePapers.value = result
-            }
-            _homeLoadingState.value = false
+    @OptIn(ExperimentalCoroutinesApi::class)
+    suspend fun defaultPapers() {
+        _homeLoadingState.value = true
+        val (result, state) = networkService.withNetworkTimeout {
+            userDataStore.preferredField
+                .flatMapLatest { categories ->
+                    flowOf(paperRepository.defaultPapers(categories))
+                }.first()
         }
+        handleNetworkState(state)
+        Log.i("Default Papers", result.toString())
+        if (result == null) {
+            _homePapers.value = emptyList<Entry>()
+        } else {
+            _homePapers.value = result
+        }
+        _homeLoadingState.value = false
     }
 
     fun refreshHomePapers() {
-        if (refreshingState.value) return
-        _refreshingState.value = true
-        Log.i("Refresh", _refreshingState.value.toString())
-        try {
-            defaultPapers()
-            _refreshingState.value = false
-        } catch (e: Exception) {
-            Log.e("Paper View Model", "Refresh Exception")
-            _refreshingState.value = false
+        if (homeRefreshingState.value) return
+        _homeRefreshingState.value = true
+        viewModelScope.launch {
+            Log.i("Refresh", _homeRefreshingState.value.toString())
+            try {
+                defaultPapers()
+            } catch (e: Exception) {
+                Log.e("Paper View Model", "Refresh Exception")
+            }
+            Log.i("Paper ViewModel", "Home Refreshed")
+            _homeRefreshingState.value = false
         }
+
     }
 
-    fun searchPapers(query: String) {
-        viewModelScope.launch {
-            _searchLoadingState.value = true
-            _networkErrorState.value = null
-            val (papers, state) = networkService.withNetworkTimeout {
-                paperRepository.searchPapers(query)
-            }
-            handleNetworkState(state)
-            if(papers == null) {
-                _searchPapers.value = emptyList<Entry>()
-            } else {
-                _searchPapers.value = papers
-            }
-            _searchLoadingState.value = false
+    suspend fun searchPapers(query: String) {
+        _searchLoadingState.value = true
+        _networkErrorState.value = null
+        val (papers, state) = networkService.withNetworkTimeout {
+            paperRepository.searchPapers(query)
         }
+        handleNetworkState(state)
+        if(papers == null) {
+            _searchPapers.value = emptyList<Entry>()
+        } else {
+            _searchPapers.value = papers
+        }
+        _searchLoadingState.value = false
     }
 
     fun refreshSearchPapers(query: String) {
-        if (refreshingState.value) return
-        _refreshingState.value = true
-        try {
-            searchPapers(query)
-            _refreshingState.value = false
-        } catch (e: Exception) {
-            Log.e("Paper View Model", "Refresh Exception")
-            _refreshingState.value = false
+        if (searchRefreshingState.value) return
+        _searchLoadingState.value = true
+        viewModelScope.launch {
+            try {
+                searchPapers(query)
+            } catch (e: Exception) {
+                Log.e("Paper ViewModel", "Refresh Exception")
+            } finally {
+                Log.i("Paper ViewModel", "Search Refreshed")
+                _searchRefreshingState.value = false
+            }
         }
+
+
     }
     // 加载更多论文
     fun loadMorePapers(query: String) {
@@ -142,28 +153,13 @@ class PaperViewModel @Inject constructor(
         }
     }
 
-    // 刷新数据
-    fun refreshPapers(query: String) {
-        if (refreshingState.value) return
-        _refreshingState.value = true
-        try {
-            currentPage = 0
-            _canLoadMore.value = true
-            _searchPapers.value = emptyList()
-            loadMorePapers(query)
-            _refreshingState.value = false
-        } catch (e: Exception) {
-            Log.e("Paper View Model", "Refresh Exception")
-        }
-    }
-
     // 处理网络状态
-    private fun handleNetworkState(state: NetworkState) {
+    private fun handleNetworkState(state: NetworkService.NetworkState) {
         _networkErrorState.value = when (state) {
-            NetworkState.Unavailable -> "网络不可用，请检查连接"
-            NetworkState.TimeoutWarning -> "网络响应缓慢..."
-            NetworkState.TimeoutCancel -> "请求超时，请重试"
-            NetworkState.Error -> "出现异常，请重试"
+            NetworkService.NetworkState.Unavailable -> "网络不可用，请检查连接"
+            NetworkService.NetworkState.TimeoutWarning -> "网络响应缓慢..."
+            NetworkService.NetworkState.TimeoutCancel -> "请求超时，请重试"
+            NetworkService.NetworkState.Error -> "出现异常，请重试"
             else -> null
         }
     }

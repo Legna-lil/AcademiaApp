@@ -25,13 +25,13 @@ fun PaperScreen(
     paperViewModel: PaperViewModel = viewModel(),
     papers: List<Entry>,
     isLoading: Boolean,
+    isRefreshing: Boolean,
     hasMore: Boolean, // 新增：是否有更多数据的标志
     onRefresh: () -> Unit,
     onLoadMore: () -> Unit = {},
     listState: LazyListState = rememberLazyListState(),
     onClick: (Entry) -> Unit = {}
 ) {
-    val isRefreshing by paperViewModel.refreshingState
     val swipeRefreshState = rememberSwipeRefreshState(isRefreshing)
     val networkErrorState by paperViewModel.networkErrorState.collectAsState()
     var lastLoadTime by remember { mutableLongStateOf(0L) }
@@ -81,7 +81,6 @@ fun PaperScreen(
             papers = papers,
             isLoading = isLoading,
             hasMore = hasMore,
-            networkErrorState = networkErrorState,
             isRefreshing = isRefreshing,
             listState = listState,
             onClick = onClick

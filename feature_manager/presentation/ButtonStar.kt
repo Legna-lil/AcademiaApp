@@ -1,4 +1,4 @@
-package com.example.academiaui.feature_manager.presentation.components
+package com.example.academiaui.feature_manager.presentation
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row

@@ -1,4 +1,4 @@
-package com.example.academiaui.feature_manager.presentation.components
+package com.example.academiaui.feature_manager.presentation
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -43,12 +43,12 @@ fun ManageList(
                     items(
                         count = items.size
                     ) {item ->
-                       Manage(
-                           item = items[item],
-                           isManageMode = isManageMode,
-                           onClick = {
-                               onClick(items[item])
-                           })
+                        Manage(
+                            item = items[item],
+                            isManageMode = isManageMode,
+                            onClick = {
+                                onClick(items[item])
+                            })
                     }
                 }
             }
