@@ -6,7 +6,7 @@ Academia 是一款针对**科学类英语论文**的便捷的**搜索与管理�
 
 ## 项目简介
 
-- **BIT** 2024-2025下/大二下 《Android技术开发基础》课程作业
+- **BIT** 北理工 北京理工大学 2024-2025下/大二下 《Android技术开发基础》课程作业
 - **运行环境**： 10.0以上版本Android的Android手机
 - **部署方法：** 直接安装Academia.apk即可
 - 开发语言及框架：Kotlin + Jetpack Compose + Gradle
